@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Expense Tracker</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 25px;
+            font-family: Arial, sans-serif;
+            background: #f2f5fa;
+            color: #202b3c;
+        }
+        .container { max-width: 1000px; margin: auto; }
+        h1 { color: #183b67; }
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .card, .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 3px 12px #0000000c;
+            margin-bottom: 20px;
+        }
+        .card h3 { margin-top: 0; color: #637083; font-size: 14px; }
+        .value { font-size: 25px; font-weight: bold; }
+        form { margin: 0; }
+        .fields {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+        }
+        label { display: block; margin-bottom: 6px; font-weight: bold; }
+        input, select, textarea, button {
+            width: 100%;
+            padding: 11px;
+            border: 1px solid #d4dbe5;
+            border-radius: 7px;
+            font: inherit;
+        }
+        button {
+            border: none;
+            background: #2163c5;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        button:hover { background: #174b98; }
+        .submit { margin-top: 14px; }
+        .message { padding: 12px; border-radius: 7px; margin: 10px 0; }
+        .success { background: #dcfce7; color: #166534; }
+        .error { background: #fee2e2; color: #991b1b; }
+        .table-wrap { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e6eaf0; }
+        th { background: #f8fafc; }
+        .delete { background: #c73737; padding: 8px; }
+        .muted { color: #667085; }
+        @media (max-width: 600px) { body { padding: 12px; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Smart Expense Tracker</h1>
+    <p class="muted">Track expenses, organize spending, and manage your budget.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for category, message in messages %}
+        <div class="message {{ category }}">{{ message }}</div>
+      {% endfor %}
+    {% endwith %}
+
+    <div class="cards">
+        <div class="card">
+            <h3>Total Expenses</h3>
+            <div class="value">₹{{ "%.2f"|format(total) }}</div>
+        </div>
+        <div class="card">
+            <h3>Monthly Budget</h3>
+            <div class="value">₹{{ "%.2f"|format(budget) }}</div>
+        </div>
+        <div class="card">
+            <h3>Budget Remaining</h3>
+            <div class="value">₹{{ "%.2f"|format(remaining) }}</div>
+        </div>
+    </div>
+
+    <section class="panel">
+        <h2>Add an Expense</h2>
+        <form action="{{ url_for('add_expense') }}" method="POST">
+            <div class="fields">
+                <div>
+                    <label for="name">Expense name</label>
+                    <input id="name" name="name" type="text" required
+                           placeholder="e.g. Food">
+                </div>
+                <div>
+                    <label for="amount">Amount (₹)</label>
+                    <input id="amount" name="amount" type="number"
+                           min="0.01" step="0.01" required placeholder="100">
+                </div>
+                <div>
+                    <label for="category">Category</label>
+                    <select id="category" name="category">
+                        <option>Food</option>
+                        <option>Travel</option>
+                        <option>Shopping</option>
+                        <option>Bills</option>
+                        <option>Education</option>
+                        <option>Health</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="expense_date">Date</label>
+                    <input id="expense_date" name="expense_date"
+                           type="date" value="{{ today }}" required>
+                </div>
+                <div>
+                    <label for="description">Description (optional)</label>
+                    <input id="description" name="description" type="text"
+                           placeholder="Notes">
+                </div>
+            </div>
+            <button class="submit" type="submit">Add Expense</button>
+        </form>
+    </section>
+
+    <section class="panel">
+        <h2>Set Your Budget</h2>
+        <form action="{{ url_for('set_budget') }}" method="POST">
+            <div class="fields">
+                <div>
+                    <label for="budget">Budget amount (₹)</label>
+                    <input id="budget" name="budget" type="number"
+                           min="0" step="0.01" value="{{ budget }}" required>
+                </div>
+                <div style="align-self:end">
+                    <button type="submit">Save Budget</button>
+                </div>
+            </div>
+        </form>
+    </section>
+
+    <section class="panel">
+        <h2>Your Expenses</h2>
+        {% if expenses %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Amount</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for expense in expenses %}
+                    <tr>
+                        <td>{{ expense["expense_date"] }}</td>
+                        <td>{{ expense["name"] }}</td>
+                        <td>{{ expense["category"] }}</td>
+                        <td>₹{{ "%.2f"|format(expense["amount"]) }}</td>
+                        <td>
+                            <form action="{{ url_for('delete_expense', expense_id=expense['id']) }}"
+                                  method="POST">
+                                <button class="delete" type="submit">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+            <p class="muted">No expenses added yet. Add your first expense above.</p>
+        {% endif %}
+    </section>
+
+    <section class="panel">
+        <h2>Spending by Category</h2>
+        {% if category_totals %}
+            {% for item in category_totals %}
+                <p><strong>{{ item["category"] }}:</strong>
+                ₹{{ "%.2f"|format(item["total"]) }}</p>
+            {% endfor %}
+        {% else %}
+            <p class="muted">Your category totals will appear here after you add expenses.</p>
+        {% endif %}
+    </section>
+</div>
+</body>
+</html>
