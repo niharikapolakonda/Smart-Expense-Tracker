@@ -2,200 +2,171 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Smart Expense Tracker</title>
     <style>
-        * { box-sizing: border-box; }
         body {
-            margin: 0;
-            padding: 25px;
             font-family: Arial, sans-serif;
-            background: #f2f5fa;
-            color: #202b3c;
-        }
-        .container { max-width: 1000px; margin: auto; }
-        h1 { color: #183b67; }
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-        .card, .panel {
-            background: white;
-            border-radius: 12px;
+            max-width: 900px;
+            margin: 30px auto;
             padding: 20px;
-            box-shadow: 0 3px 12px #0000000c;
-            margin-bottom: 20px;
+            background: #f4f6f9;
+            color: #222;
         }
-        .card h3 { margin-top: 0; color: #637083; font-size: 14px; }
-        .value { font-size: 25px; font-weight: bold; }
-        form { margin: 0; }
-        .fields {
+        .card {
+            background: white;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px #0001;
+        }
+        .summary {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 12px;
         }
-        label { display: block; margin-bottom: 6px; font-weight: bold; }
-        input, select, textarea, button {
+        input, select, button {
+            box-sizing: border-box;
             width: 100%;
             padding: 11px;
-            border: 1px solid #d4dbe5;
-            border-radius: 7px;
-            font: inherit;
+            margin: 7px 0;
         }
         button {
-            border: none;
-            background: #2163c5;
+            background: #176b4d;
             color: white;
-            font-weight: bold;
+            border: none;
+            border-radius: 6px;
             cursor: pointer;
         }
-        button:hover { background: #174b98; }
-        .submit { margin-top: 14px; }
-        .message { padding: 12px; border-radius: 7px; margin: 10px 0; }
-        .success { background: #dcfce7; color: #166534; }
-        .error { background: #fee2e2; color: #991b1b; }
-        .table-wrap { overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e6eaf0; }
-        th { background: #f8fafc; }
-        .delete { background: #c73737; padding: 8px; }
-        .muted { color: #667085; }
-        @media (max-width: 600px) { body { padding: 12px; } }
+        .delete {
+            background: #b42318;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: left;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            overflow-wrap: anywhere;
+        }
+        .table-wrap {
+            overflow-x: auto;
+        }
     </style>
 </head>
 <body>
-<div class="container">
     <h1>Smart Expense Tracker</h1>
-    <p class="muted">Track expenses, organize spending, and manage your budget.</p>
+    <p>Track your expenses and manage your monthly budget.</p>
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% for category, message in messages %}
-        <div class="message {{ category }}">{{ message }}</div>
-      {% endfor %}
-    {% endwith %}
-
-    <div class="cards">
+    <div class="summary">
         <div class="card">
             <h3>Total Expenses</h3>
-            <div class="value">₹{{ "%.2f"|format(total) }}</div>
+            <h2>₹{{ "%.2f"|format(total_expenses) }}</h2>
+        </div>
+        <div class="card">
+            <h3>This Month</h3>
+            <h2>₹{{ "%.2f"|format(monthly_total) }}</h2>
         </div>
         <div class="card">
             <h3>Monthly Budget</h3>
-            <div class="value">₹{{ "%.2f"|format(budget) }}</div>
+            <h2>₹{{ "%.2f"|format(monthly_budget) }}</h2>
         </div>
         <div class="card">
             <h3>Budget Remaining</h3>
-            <div class="value">₹{{ "%.2f"|format(remaining) }}</div>
+            <h2>₹{{ "%.2f"|format(budget_remaining) }}</h2>
         </div>
     </div>
 
-    <section class="panel">
+    <div class="card">
         <h2>Add an Expense</h2>
-        <form action="{{ url_for('add_expense') }}" method="POST">
-            <div class="fields">
-                <div>
-                    <label for="name">Expense name</label>
-                    <input id="name" name="name" type="text" required
-                           placeholder="e.g. Food">
-                </div>
-                <div>
-                    <label for="amount">Amount (₹)</label>
-                    <input id="amount" name="amount" type="number"
-                           min="0.01" step="0.01" required placeholder="100">
-                </div>
-                <div>
-                    <label for="category">Category</label>
-                    <select id="category" name="category">
-                        <option>Food</option>
-                        <option>Travel</option>
-                        <option>Shopping</option>
-                        <option>Bills</option>
-                        <option>Education</option>
-                        <option>Health</option>
-                        <option>Other</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="expense_date">Date</label>
-                    <input id="expense_date" name="expense_date"
-                           type="date" value="{{ today }}" required>
-                </div>
-                <div>
-                    <label for="description">Description (optional)</label>
-                    <input id="description" name="description" type="text"
-                           placeholder="Notes">
-                </div>
-            </div>
-            <button class="submit" type="submit">Add Expense</button>
-        </form>
-    </section>
+        <form method="POST" action="/">
+            <input type="hidden" name="action" value="add_expense">
 
-    <section class="panel">
-        <h2>Set Your Budget</h2>
-        <form action="{{ url_for('set_budget') }}" method="POST">
-            <div class="fields">
-                <div>
-                    <label for="budget">Budget amount (₹)</label>
-                    <input id="budget" name="budget" type="number"
-                           min="0" step="0.01" value="{{ budget }}" required>
-                </div>
-                <div style="align-self:end">
-                    <button type="submit">Save Budget</button>
-                </div>
-            </div>
-        </form>
-    </section>
+            <label>Amount (₹)</label>
+            <input type="number" name="amount" min="0.01"
+                   step="0.01" required>
 
-    <section class="panel">
-        <h2>Your Expenses</h2>
+            <label>Category</label>
+            <select name="category" required>
+                <option value="">Choose category</option>
+                <option>Food</option>
+                <option>Travel</option>
+                <option>Shopping</option>
+                <option>Education</option>
+                <option>Bills</option>
+                <option>Health</option>
+                <option>Other</option>
+            </select>
+
+            <label>Date</label>
+            <input type="date" name="date"
+                   value="{{ '' }}" required
+                   id="expense-date">
+
+            <label>Description</label>
+            <input type="text" name="description"
+                   placeholder="Enter a short description">
+
+            <button type="submit">Add Expense</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Update Monthly Budget</h2>
+        <form method="POST" action="/">
+            <input type="hidden" name="action" value="update_budget">
+            <label>Budget (₹)</label>
+            <input type="number" name="budget" min="0"
+                   step="0.01" value="{{ monthly_budget }}" required>
+            <button type="submit">Update Budget</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Expense History</h2>
+
         {% if expenses %}
         <div class="table-wrap">
             <table>
                 <thead>
                     <tr>
                         <th>Date</th>
-                        <th>Name</th>
                         <th>Category</th>
+                        <th>Description</th>
                         <th>Amount</th>
                         <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                {% for expense in expenses %}
+                    {% for expense in expenses|reverse %}
                     <tr>
-                        <td>{{ expense["expense_date"] }}</td>
-                        <td>{{ expense["name"] }}</td>
-                        <td>{{ expense["category"] }}</td>
-                        <td>₹{{ "%.2f"|format(expense["amount"]) }}</td>
+                        <td>{{ expense.date }}</td>
+                        <td>{{ expense.category }}</td>
+                        <td>{{ expense.description or "-" }}</td>
+                        <td>₹{{ "%.2f"|format(expense.amount) }}</td>
                         <td>
-                            <form action="{{ url_for('delete_expense', expense_id=expense['id']) }}"
-                                  method="POST">
-                                <button class="delete" type="submit">Delete</button>
+                            <form method="POST"
+                                  action="{{ url_for('delete_expense', expense_id=expense.id) }}">
+                                <button class="delete" type="submit">
+                                    Delete
+                                </button>
                             </form>
                         </td>
                     </tr>
-                {% endfor %}
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
         {% else %}
-            <p class="muted">No expenses added yet. Add your first expense above.</p>
+        <p>No expenses added yet.</p>
         {% endif %}
-    </section>
+    </div>
 
-    <section class="panel">
-        <h2>Spending by Category</h2>
-        {% if category_totals %}
-            {% for item in category_totals %}
-                <p><strong>{{ item["category"] }}:</strong>
-                ₹{{ "%.2f"|format(item["total"]) }}</p>
-            {% endfor %}
-        {% else %}
-            <p class="muted">Your category totals will appear here after you add expenses.</p>
-        {% endif %}
-    </section>
-</div>
+    <script>
+        document.getElementById("expense-date").value =
+            new Date().toISOString().slice(0, 10);
+    </script>
 </body>
 </html>
